@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# --- CONFIG ---
+GITHUB_API_USER="https://api.github.com/user"
+
+log() { echo "[$(date '+%F %T')] $*"; }  # Added simple log function for consistency if needed.
+
+github_token_validate_pull_user() {
+    log "Validating GitHub token and fetching user info..."
+
+    if [ -z "${GITHUB_TOKEN:-}" ]; then
+        log "ERROR: GITHUB_TOKEN not set. Aborting."
+        exit 1
+    fi
+
+    # Hit the /user endpoint
+    BODY_FILE="$(mktemp)"
+    USER_JSON=$(curl -sS -w "\n%{http_code}" -o $BODY_FILE \
+    -H "Authorization: Bearer $GITHUB_TOKEN" $GITHUB_API_USER)
+
+    # Split out HTTP status and response body
+    HTTP_CODE=$(tail -n1 <<<"$USER_JSON")
+    BODY=$(head -n -1 <<<"$USER_JSON")
+
+    if [ "$HTTP_CODE" != "200" ]; then
+        log "ERROR: GitHub token validation failed (HTTP $HTTP_CODE)."
+        cat $BODY_FILE
+        exit 1
+    fi
+
+    # Extract username from JSON safely (using grep + cut for portability)
+    GITHUB_USER=$(grep -oE '"login": ?"[^"]+' $BODY_FILE | cut -d'"' -f4)
+    if [ -z "$GITHUB_USER" ]; then
+        log "ERROR: Could not extract username from GitHub response."
+        exit 1
+    fi
+    rm -f "$BODY_FILE"
+
+    log "Token is valid for user: $GITHUB_USER"
+}
+
+GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/refs/heads/main/clone_repo.sh"
+read -s -p "Enter github classic token: " GITHUB_TOKEN
+log ""
+
+if [[ -z "$GITHUB_TOKEN" ]]; then
+    log "No github token entered."
+    exit 1
+fi
+
+github_token_validate_pull_user
+
+curl -sS -f -o clone_repo.sh \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    "$GITHUB_REPO_URL" || { log "Error curl-ing clonr_repo.sh."; exit 1; }
+
+chmod +x clone_repo.sh
+
+# --- helper ---
+if [ "$(id -u)" -ne 0 ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
+GITHUB_USER="${GITHUB_USER}" GITHUB_TOKEN="${GITHUB_TOKEN}" $SUDO bash clone_repo.sh
