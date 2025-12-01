@@ -52,7 +52,7 @@ github_token_validate_pull_user
 
 curl -sS -f -o clone_repo.sh \
     -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_REPO_URL" || { log "Error curl-ing clonr_repo.sh."; exit 1; }
+    "$GITHUB_REPO_URL" || { log "Error curl-ing clone_repo.sh."; exit 1; }
 
 chmod +x clone_repo.sh
 
