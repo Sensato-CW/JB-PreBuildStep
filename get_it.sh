@@ -3,7 +3,7 @@
 # --- CONFIG ---
 GITHUB_API_USER="https://api.github.com/user"
 
-log() { echo "[$(date '+%F %T')] $*"; }  # Added simple log function for consistency if needed.
+log() { echo "[$(date '+%F %T')] $*"; }
 
 github_token_validate_pull_user() {
     log "Validating GitHub token and fetching user info..."
