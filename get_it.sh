@@ -2,6 +2,7 @@
 
 # --- CONFIG ---
 GITHUB_API_USER="https://api.github.com/user"
+# --------------
 
 log() { echo "[$(date '+%F %T')] $*"; }
 
