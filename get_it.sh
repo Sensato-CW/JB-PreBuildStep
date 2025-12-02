@@ -63,5 +63,5 @@ $SUDO curl -sS -f -o clone_repo.sh \
     -H "Authorization: token $GITHUB_TOKEN" \
     "$GITHUB_REPO_URL" || { log "Error curl-ing clone_repo.sh."; exit 1; }
 
-chmod +x clone_repo.sh
+$SUDO chmod +x clone_repo.sh
 GITHUB_USER="${GITHUB_USER}" GITHUB_TOKEN="${GITHUB_TOKEN}" $SUDO bash clone_repo.sh
