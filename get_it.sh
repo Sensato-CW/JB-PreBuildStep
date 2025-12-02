@@ -51,12 +51,6 @@ fi
 
 github_token_validate_pull_user
 
-curl -sS -f -o clone_repo.sh \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    "$GITHUB_REPO_URL" || { log "Error curl-ing clone_repo.sh."; exit 1; }
-
-chmod +x clone_repo.sh
-
 # --- helper ---
 if [ "$(id -u)" -ne 0 ]; then
     SUDO="sudo"
@@ -64,4 +58,10 @@ else
     SUDO=""
 fi
 
+
+$SUDO curl -sS -f -o clone_repo.sh \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    "$GITHUB_REPO_URL" || { log "Error curl-ing clone_repo.sh."; exit 1; }
+
+chmod +x clone_repo.sh
 GITHUB_USER="${GITHUB_USER}" GITHUB_TOKEN="${GITHUB_TOKEN}" $SUDO bash clone_repo.sh
