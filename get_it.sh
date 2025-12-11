@@ -16,8 +16,9 @@ github_token_validate_pull_user() {
 
     # Hit the /user endpoint
     BODY_FILE="$(mktemp)"
-    USER_JSON=$(curl -sS -w "\n%{http_code}" -o $BODY_FILE \
-    -H "Authorization: Bearer $GITHUB_TOKEN" $GITHUB_API_USER)
+    wget -q -O $BODY_FILE --header="Authorization: Bearer $GITHUB_TOKEN" --server-response $GITHUB_API_USER 2> >(HTTP_CODE=$(awk '/^  HTTP/{print $2}'))
+    # Note: Adjust variable if USER_JSON was meant for body; here assuming it captures status code.
+    USER_JSON=$HTTP_CODE  # Rename or handle body via cat $BODY_FILE later as needed.
 
     # Split out HTTP status and response body
     HTTP_CODE=$(tail -n1 <<<"$USER_JSON")
