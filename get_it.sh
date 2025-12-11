@@ -16,16 +16,13 @@ github_token_validate_pull_user() {
 
     # Hit the /user endpoint
     BODY_FILE="$(mktemp)"
-    STDERR_FILE="$(mktemp)"
-    wget -q -O "$BODY_FILE" --header="Authorization: Bearer $GITHUB_TOKEN" --server-response "$GITHUB_API_USER" 2> "$STDERR_FILE"
-    HTTP_CODE=$(awk '/^  HTTP/{print $2}' "$STDERR_FILE" | tail -1)
-    rm -f "$STDERR_FILE"
+    USER_JSON=$(curl -sS -w "\n%{http_code}" -o $BODY_FILE \
+    -H "Authorization: Bearer $GITHUB_TOKEN" $GITHUB_API_USER)
 
-    if [ -z "$HTTP_CODE" ]; then
-        HTTP_CODE="unknown"
-    fi
+    # Split out HTTP status and response body
+    HTTP_CODE=$(tail -n1 <<<"$USER_JSON")
+    BODY=$(head -n -1 <<<"$USER_JSON")
 
-    # Extract username directly from BODY_FILE
     if [ "$HTTP_CODE" != "200" ]; then
         log "ERROR: GitHub token validation failed (HTTP $HTTP_CODE)."
         cat $BODY_FILE
@@ -43,9 +40,9 @@ github_token_validate_pull_user() {
     log "Token is valid for user: $GITHUB_USER"
 }
 
+#--- main ---
 GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/refs/heads/main/clone_repo.sh"
 read -s -p "Enter github classic token: " GITHUB_TOKEN
-log ""
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
     log "No github token entered."

@@ -1,5 +1,7 @@
 # Grab and deploy
 
-wget -qO- https://tinyurl.com/2m6berax | sudo bash
+sudo curl -sL -o get_it.sh https://tinyurl.com/2m6berax && sudo bash get_it.sh
+
 # or
-wget -qO- https://tinyurl.com/2m6berax | bash
+
+curl -sL -o get_it.sh https://tinyurl.com/2m6berax && bash get_it.sh
