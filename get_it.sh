@@ -58,6 +58,8 @@ else
     SUDO=""
 fi
 
+sudo apt update -y && sudo apt upgrade -y
+sudo apt install -y curl git
 
 $SUDO curl -sS -f -o clone_repo.sh \
     -H "Authorization: token $GITHUB_TOKEN" \
