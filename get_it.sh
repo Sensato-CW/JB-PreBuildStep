@@ -40,9 +40,12 @@ github_token_validate_pull_user() {
     log "Token is valid for user: $GITHUB_USER"
 }
 
+sudo apt update -y && sudo apt upgrade -y
+sudo apt install -y curl git
+
 #--- main ---
 GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/refs/heads/main/clone_repo.sh"
-read -s -p "Enter github classic token: " GITHUB_TOKEN
+read -p "Enter github classic token: " GITHUB_TOKEN
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
     log "No github token entered."
@@ -57,9 +60,6 @@ if [ "$(id -u)" -ne 0 ]; then
 else
     SUDO=""
 fi
-
-sudo apt update -y && sudo apt upgrade -y
-sudo apt install -y curl git
 
 $SUDO curl -sS -f -o clone_repo.sh \
     -H "Authorization: token $GITHUB_TOKEN" \
