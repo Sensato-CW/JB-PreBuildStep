@@ -66,4 +66,10 @@ $SUDO curl -sS -f -o clone_repo.sh \
     "$GITHUB_REPO_URL" || { log "Error curl-ing clone_repo.sh."; exit 1; }
 $SUDO chown "$(id -u):$(id -g)" clone_repo.sh
 $SUDO chmod +x clone_repo.sh
-$SUDO env GITHUB_USER="${GITHUB_USER}" GITHUB_TOKEN="${GITHUB_TOKEN}" bash clone_repo.sh
+mv clone_repo.sh /opt/clone_repo.sh
+$SUDO env GITHUB_USER="${GITHUB_USER}" GITHUB_TOKEN="${GITHUB_TOKEN}" bash /opt/clone_repo.sh
+
+# This message will self-destruct in 5 seconds...
+sleep 5
+log "Removing get_it.sh script for security."
+sudo rm -f get_it.sh
