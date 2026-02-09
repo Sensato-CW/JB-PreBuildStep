@@ -1,0 +1,31 @@
+- name Sentinel – Run JB PreBuild Step
+  hosts sentinels_canary
+  become true
+  gather_facts false
+
+  vars
+    marker_file etccloudwavesentinel_prebuild_complete
+
+  tasks
+    - name Check if prebuild already completed
+      stat
+        path {{ marker_file }}
+      register prebuild_done
+
+    - name Download and run JB prebuild script
+      shell 
+        set -euo pipefail
+
+        wget -q -O rootget_it.sh 
+          httpsraw.githubusercontent.comSensato-CWJB-PreBuildStepmainget_it.sh
+
+        chmod +x rootget_it.sh
+        bash rootget_it.sh
+
+        mkdir -p etccloudwave
+        touch {{ marker_file }}
+      args
+        executable binbash
+      environment
+        GITHUB_TOKEN {{ github_token }}
+      when not prebuild_done.stat.exists
