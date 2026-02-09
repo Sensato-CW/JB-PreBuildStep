@@ -9,12 +9,8 @@ log() { echo "[$(date '+%F %T')] $*"; }
 github_token_validate_pull_user() {
     log "Validating GitHub token and fetching user info..."
 
-    if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-        read -p "Enter github classic token: " GITHUB_TOKEN
-    fi
-
-    if [[ -z "$GITHUB_TOKEN" ]]; then
-        log "ERROR: GITHUB_TOKEN not provided."
+    if [ -z "${GITHUB_TOKEN:-}" ]; then
+        log "ERROR: GITHUB_TOKEN not set. Aborting."
         exit 1
     fi
 
@@ -49,10 +45,12 @@ sudo apt install -y curl git
 
 #--- main ---
 GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/refs/heads/main/clone_repo.sh"
-read -p "Enter github classic token: " GITHUB_TOKEN
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+    read -p "Enter github classic token: " GITHUB_TOKEN
+fi
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
-    log "No github token entered."
+    log "ERROR: GITHUB_TOKEN not provided."
     exit 1
 fi
 
