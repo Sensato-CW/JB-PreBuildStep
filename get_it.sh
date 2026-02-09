@@ -9,8 +9,12 @@ log() { echo "[$(date '+%F %T')] $*"; }
 github_token_validate_pull_user() {
     log "Validating GitHub token and fetching user info..."
 
-    if [ -z "${GITHUB_TOKEN:-}" ]; then
-        log "ERROR: GITHUB_TOKEN not set. Aborting."
+    if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+        read -p "Enter github classic token: " GITHUB_TOKEN
+    fi
+
+    if [[ -z "$GITHUB_TOKEN" ]]; then
+        log "ERROR: GITHUB_TOKEN not provided."
         exit 1
     fi
 
