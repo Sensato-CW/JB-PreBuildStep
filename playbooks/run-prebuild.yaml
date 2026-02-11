@@ -1,5 +1,5 @@
 - name: Sentinel – Run JB PreBuild Step
-  hosts: sentinels_canary
+  hosts: all
   become: true
   gather_facts: false
 
