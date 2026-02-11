@@ -24,7 +24,7 @@
 
     - name: Download JB prebuild script
       get_url:
-        url: https://raw.githubusercontent.com/gocloudwave/BuildStep/main/get_it.sh
+        url: https://raw.githubusercontent.com/Sensato-CW/JB-PreBuildStep/main/get_it.sh
         dest: /root/get_it.sh
         mode: '0755'
         force: true
@@ -33,21 +33,9 @@
     - name: Execute JB prebuild script (non-interactive)
       shell: /bin/bash -x /root/get_it.sh
       environment:
-        # Token is injected into the AWX runner; pass it explicitly to the remote host
         GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
-        # Your updated clone_repo.sh should honor BUILD_OPTION to avoid interactive menu
         BUILD_OPTION: "1"
       register: prebuild_result
-      when: not prebuild_done.stat.exists
-
-    - name: Show script stdout
-      debug:
-        var: prebuild_result.stdout_lines
-      when: not prebuild_done.stat.exists
-
-    - name: Show script stderr
-      debug:
-        var: prebuild_result.stderr_lines
       when: not prebuild_done.stat.exists
 
     - name: Fail if prebuild script failed
@@ -64,9 +52,4 @@
         owner: root
         group: root
         mode: '0644'
-      when: not prebuild_done.stat.exists
-
-    - name: Confirm completion
-      debug:
-        msg: "Prebuild completed successfully."
       when: not prebuild_done.stat.exists
