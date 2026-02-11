@@ -29,11 +29,26 @@
         mode: '0755'
       when: not prebuild_done.stat.exists
 
-    - name: Execute JB prebuild script
-      command: /bin/bash /root/get_it.sh
-      args:
-        chdir: /root
+    #################################################################
+    # Run prebuild script asynchronously so SSH restarts don't kill job
+    #################################################################
+
+    - name: Execute JB prebuild script asynchronously
+      shell: /bin/bash /root/get_it.sh
+      async: 900
+      poll: 0
+      register: prebuild_job
       when: not prebuild_done.stat.exists
+
+    - name: Wait for host to become reachable again
+      wait_for_connection:
+        delay: 15
+        timeout: 600
+      when: not prebuild_done.stat.exists
+
+    #################################################################
+    # Mark completion after host stabilizes
+    #################################################################
 
     - name: Create completion marker
       file:
