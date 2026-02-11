@@ -1,8 +1,8 @@
 ---
 - name: Sentinel – Run JB PreBuild Step
   hosts: all
-  become: true
   gather_facts: false
+  become: true
 
   vars:
     marker_file: /etc/cloudwave/sentinel_prebuild_complete
@@ -22,7 +22,7 @@
         path: "{{ marker_file }}"
       register: prebuild_done
 
-    - name: Debug GITHUB_TOKEN presence
+    - name: Debug GITHUB_TOKEN presence (before sudo)
       shell: |
         if [ -z "$GITHUB_TOKEN" ]; then
           echo "TOKEN_MISSING"
@@ -51,9 +51,11 @@
         mode: '0755'
       when: not prebuild_done.stat.exists
 
-    - name: Execute JB prebuild script with tracing
+    - name: Execute JB prebuild script with preserved env
       shell: /bin/bash -x /root/get_it.sh
       register: prebuild_result
+      become: true
+      become_flags: "--preserve-env=GITHUB_TOKEN"
       when: not prebuild_done.stat.exists
 
     - name: Show script stdout
