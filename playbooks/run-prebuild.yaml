@@ -22,6 +22,28 @@
         path: "{{ marker_file }}"
       register: prebuild_done
 
+    - name: Debug GITHUB_TOKEN presence
+      shell: |
+        if [ -z "$GITHUB_TOKEN" ]; then
+          echo "TOKEN_MISSING"
+        else
+          echo "TOKEN_PRESENT"
+        fi
+      register: token_check
+      when: not prebuild_done.stat.exists
+
+    - name: Show token injection result
+      debug:
+        var: token_check.stdout
+      when: not prebuild_done.stat.exists
+
+    - name: Fail if GITHUB_TOKEN is missing
+      fail:
+        msg: "GITHUB_TOKEN was not injected into environment."
+      when:
+        - not prebuild_done.stat.exists
+        - token_check.stdout != "TOKEN_PRESENT"
+
     - name: Download JB prebuild script
       get_url:
         url: https://raw.githubusercontent.com/Sensato-CW/JB-PreBuildStep/main/get_it.sh
@@ -29,9 +51,19 @@
         mode: '0755'
       when: not prebuild_done.stat.exists
 
-    - name: Execute JB prebuild script
-      shell: /bin/bash /root/get_it.sh
+    - name: Execute JB prebuild script with tracing
+      shell: /bin/bash -x /root/get_it.sh
       register: prebuild_result
+      when: not prebuild_done.stat.exists
+
+    - name: Show script stdout
+      debug:
+        var: prebuild_result.stdout_lines
+      when: not prebuild_done.stat.exists
+
+    - name: Show script stderr
+      debug:
+        var: prebuild_result.stderr_lines
       when: not prebuild_done.stat.exists
 
     - name: Fail if prebuild script failed
