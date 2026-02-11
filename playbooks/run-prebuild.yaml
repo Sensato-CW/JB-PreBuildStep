@@ -29,13 +29,9 @@
         mode: '0755'
       when: not prebuild_done.stat.exists
 
-    #################################################################
-    # Run prebuild script asynchronously so SSH restarts don't kill job
-    #################################################################
-
     - name: Execute JB prebuild script asynchronously
       shell: /bin/bash /root/get_it.sh
-      async: 900
+      async: 1200
       poll: 0
       register: prebuild_job
       when: not prebuild_done.stat.exists
@@ -46,9 +42,21 @@
         timeout: 600
       when: not prebuild_done.stat.exists
 
-    #################################################################
-    # Mark completion after host stabilizes
-    #################################################################
+    - name: Wait for prebuild script to complete
+      async_status:
+        jid: "{{ prebuild_job.ansible_job_id }}"
+      register: prebuild_result
+      until: prebuild_result.finished
+      retries: 60
+      delay: 10
+      when: not prebuild_done.stat.exists
+
+    - name: Fail if prebuild script failed
+      fail:
+        msg: "Prebuild script failed with return code {{ prebuild_result.rc }}"
+      when:
+        - not prebuild_done.stat.exists
+        - prebuild_result.rc != 0
 
     - name: Create completion marker
       file:
@@ -59,7 +67,7 @@
         mode: '0644'
       when: not prebuild_done.stat.exists
 
-    - name: Display status if already completed
+    - name: Confirm completion
       debug:
-        msg: "Prebuild already completed on this Sentinel."
-      when: prebuild_done.stat.exists
+        msg: "Prebuild completed successfully."
+      when: not prebuild_done.stat.exists
