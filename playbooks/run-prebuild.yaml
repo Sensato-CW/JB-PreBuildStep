@@ -1,3 +1,4 @@
+---
 - name: Sentinel – Run JB PreBuild Step
   hosts: all
   become: true
@@ -7,25 +8,43 @@
     marker_file: /etc/cloudwave/sentinel_prebuild_complete
 
   tasks:
+
+    - name: Ensure marker directory exists
+      file:
+        path: /etc/cloudwave
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
     - name: Check if prebuild already completed
       stat:
         path: "{{ marker_file }}"
       register: prebuild_done
 
-    - name: Download and run JB prebuild script
-      shell: |
-        set -euo pipefail
-
-        wget -q -O /root/get_it.sh \
-          https://raw.githubusercontent.com/Sensato-CW/JB-PreBuildStep/main/get_it.sh
-
-        chmod +x /root/get_it.sh
-        bash /root/get_it.sh
-
-        mkdir -p /etc/cloudwave
-        touch "{{ marker_file }}"
-      args:
-        executable: /bin/bash
-      environment:
-        GITHUB_TOKEN: "{{ github_token }}"
+    - name: Download JB prebuild script
+      get_url:
+        url: https://raw.githubusercontent.com/Sensato-CW/JB-PreBuildStep/main/get_it.sh
+        dest: /root/get_it.sh
+        mode: '0755'
       when: not prebuild_done.stat.exists
+
+    - name: Execute JB prebuild script
+      command: /bin/bash /root/get_it.sh
+      args:
+        chdir: /root
+      when: not prebuild_done.stat.exists
+
+    - name: Create completion marker
+      file:
+        path: "{{ marker_file }}"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+      when: not prebuild_done.stat.exists
+
+    - name: Display status if already completed
+      debug:
+        msg: "Prebuild already completed on this Sentinel."
+      when: prebuild_done.stat.exists
