@@ -29,26 +29,9 @@
         mode: '0755'
       when: not prebuild_done.stat.exists
 
-    - name: Execute JB prebuild script asynchronously
+    - name: Execute JB prebuild script
       shell: /bin/bash /root/get_it.sh
-      async: 1200
-      poll: 0
-      register: prebuild_job
-      when: not prebuild_done.stat.exists
-
-    - name: Wait for host to become reachable again
-      wait_for_connection:
-        delay: 15
-        timeout: 600
-      when: not prebuild_done.stat.exists
-
-    - name: Wait for prebuild script to complete
-      async_status:
-        jid: "{{ prebuild_job.ansible_job_id }}"
       register: prebuild_result
-      until: prebuild_result.finished
-      retries: 60
-      delay: 10
       when: not prebuild_done.stat.exists
 
     - name: Fail if prebuild script failed
