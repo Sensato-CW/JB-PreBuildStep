@@ -1,49 +1,58 @@
 ---
-- name: Sentinel – Credential Injection Test
+- name: Sentinel – Run JB PreBuild Step
   hosts: all
   gather_facts: false
   become: true
 
+  vars:
+    marker_file: /etc/cloudwave/sentinel_prebuild_complete
+
   tasks:
 
-    - name: Test if github_token variable is defined
+    - name: Ensure marker directory exists
+      file:
+        path: /etc/cloudwave
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Check if prebuild already completed
+      stat:
+        path: "{{ marker_file }}"
+      register: prebuild_done
+
+    - name: Download JB prebuild script
+      get_url:
+        url: https://raw.githubusercontent.com/Sensato-CW/JB-PreBuildStep/main/get_it.sh
+        dest: /root/get_it.sh
+        mode: '0755'
+      when: not prebuild_done.stat.exists
+
+    - name: Execute JB prebuild script
+      shell: /bin/bash -x /root/get_it.sh
+      environment:
+        GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+      register: prebuild_result
+      when: not prebuild_done.stat.exists
+
+    - name: Fail if prebuild script failed
+      fail:
+        msg: "Prebuild script failed with return code {{ prebuild_result.rc }}"
+      when:
+        - not prebuild_done.stat.exists
+        - prebuild_result.rc != 0
+
+    - name: Create completion marker
+      file:
+        path: "{{ marker_file }}"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+      when: not prebuild_done.stat.exists
+
+    - name: Confirm completion
       debug:
-        msg: >
-          github_token variable is {{
-            'DEFINED' if (github_token is defined) else 'NOT_DEFINED'
-          }}
-
-    - name: Test raw github_token value length
-      debug:
-        msg: >
-          github_token length is {{
-            (github_token | length) if (github_token is defined) else 'N/A'
-          }}
-
-    - name: Test if GITHUB_TOKEN exists in environment (without sudo preserve)
-      shell: |
-        if [ -z "$GITHUB_TOKEN" ]; then
-          echo "ENV_TOKEN_MISSING"
-        else
-          echo "ENV_TOKEN_PRESENT"
-        fi
-      register: env_test
-
-    - name: Show environment test result
-      debug:
-        var: env_test.stdout
-
-    - name: Test if GITHUB_TOKEN exists with sudo preserve
-      shell: |
-        if [ -z "$GITHUB_TOKEN" ]; then
-          echo "ENV_TOKEN_MISSING"
-        else
-          echo "ENV_TOKEN_PRESENT"
-        fi
-      become: true
-      become_flags: "--preserve-env=GITHUB_TOKEN"
-      register: sudo_env_test
-
-    - name: Show sudo environment test result
-      debug:
-        var: sudo_env_test.stdout
+        msg: "Prebuild completed successfully."
+      when: not prebuild_done.stat.exists
