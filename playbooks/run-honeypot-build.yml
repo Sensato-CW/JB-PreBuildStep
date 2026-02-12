@@ -5,16 +5,16 @@
   become: true
 
   vars:
-    # GITHUB_TOKEN: pass via AWX credential env var or extra vars
-    github_token: "{{ github_token | default(lookup('env', 'GITHUB_TOKEN')) }}"
+    # GITHUB_TOKEN: pass via AWX credential env var or extra vars (-e gh_token=...)
+    gh_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
     hp_build_script: /opt/HoneypotBuildScripts/hp-build.sh
 
   tasks:
 
-    - name: Validate github_token is set
+    - name: Validate gh_token is set
       fail:
-        msg: "github_token is required but not set."
-      when: github_token | length == 0
+        msg: "gh_token is required. Pass via AWX env credential or -e gh_token=..."
+      when: gh_token | length == 0
 
     - name: Ensure HoneypotBuildScripts exists
       stat:
@@ -23,7 +23,7 @@
 
     - name: Fail if HoneypotBuildScripts missing
       fail:
-        msg: "HoneypotBuildScripts directory not found. Run prebuild first (build_option=2)."
+        msg: "HoneypotBuildScripts directory not found. Run prebuild first (prebuild_option=2)."
       when: not hp_dir.stat.exists
 
     - name: Ensure hp-build.sh exists
@@ -42,7 +42,7 @@
         url: https://api.github.com/user
         method: GET
         headers:
-          Authorization: "Bearer {{ github_token }}"
+          Authorization: "Bearer {{ gh_token }}"
         return_content: true
       register: github_response
       delegate_to: localhost
@@ -55,7 +55,7 @@
     - name: Execute Honeypot build script
       shell: "/bin/bash {{ hp_build_script }}"
       environment:
-        GITHUB_TOKEN: "{{ github_token }}"
+        GITHUB_TOKEN: "{{ gh_token }}"
         GITHUB_USER: "{{ github_user }}"
       register: build_result
 
