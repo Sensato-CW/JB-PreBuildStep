@@ -54,6 +54,7 @@
       environment:
         GITHUB_TOKEN: "{{ gh_token }}"
         BUILD_OPTION: "{{ prebuild_option }}"
+        DEBIAN_FRONTEND: noninteractive
       register: prebuild_result
       when: not prebuild_done.stat.exists
 
