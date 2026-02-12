@@ -17,7 +17,7 @@
       when: not sentinel_dir.stat.exists
 
     - name: Execute Honeypot build script
-      shell: /bin/bash /opt/hp-build.sh
+      shell: /bin/bash /opt/HoneypotBuildScripts/hp-build.sh
       register: build_result
 
     - name: Show build output
