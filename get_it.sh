@@ -1,83 +1,83 @@
 #!/bin/bash
-set -euo pipefail
 
 # --- CONFIG ---
 GITHUB_API_USER="https://api.github.com/user"
-GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/main/clone_repo.sh"
 # --------------
 
 log() { echo "[$(date '+%F %T')] $*"; }
 
 github_token_validate_pull_user() {
-  log "Validating GitHub token and fetching user info..."
+    log "Validating GitHub token and fetching user info..."
 
-  if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-    log "ERROR: GITHUB_TOKEN not set. Aborting."
-    exit 1
-  fi
+    if [ -z "${GITHUB_TOKEN:-}" ]; then
+        log "ERROR: GITHUB_TOKEN not set. Aborting."
+        exit 1
+    fi
 
-  local body_file http_code github_user
-  body_file="$(mktemp)"
+    # Hit the /user endpoint
+    BODY_FILE="$(mktemp)"
+    USER_JSON=$(curl -sS -w "\n%{http_code}" -o "$BODY_FILE" \
+    -H "Authorization: Bearer $GITHUB_TOKEN" "$GITHUB_API_USER")
 
-  http_code="$(curl -sS -o "$body_file" -w "%{http_code}" \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    "$GITHUB_API_USER")"
+    # Split out HTTP status and response body
+    HTTP_CODE=$(tail -n1 <<<"$USER_JSON")
 
-  if [[ "$http_code" != "200" ]]; then
-    log "ERROR: GitHub token validation failed (HTTP $http_code). Response:"
-    cat "$body_file" || true
-    rm -f "$body_file"
-    exit 1
-  fi
+    if [ "$HTTP_CODE" != "200" ]; then
+        log "ERROR: GitHub token validation failed (HTTP $HTTP_CODE)."
+        cat "$BODY_FILE"
+        rm -f "$BODY_FILE"
+        exit 1
+    fi
 
-  github_user="$(grep -oE '"login": ?"[^"]+' "$body_file" | cut -d'"' -f4 || true)"
-  rm -f "$body_file"
+    # Extract username from JSON safely (using grep + cut for portability)
+    GITHUB_USER=$(grep -oE '"login": ?"[^"]+' "$BODY_FILE" | cut -d'"' -f4)
+    if [ -z "$GITHUB_USER" ]; then
+        log "ERROR: Could not extract username from GitHub response."
+        rm -f "$BODY_FILE"
+        exit 1
+    fi
+    rm -f "$BODY_FILE"
 
-  if [[ -z "$github_user" ]]; then
-    log "ERROR: Could not extract username from GitHub response."
-    exit 1
-  fi
-
-  GITHUB_USER="$github_user"
-  export GITHUB_USER
-  log "Token is valid for user: $GITHUB_USER"
+    log "Token is valid for user: $GITHUB_USER"
 }
 
-require_env() {
-  local var_name="$1"
-  if [[ -z "${!var_name:-}" ]]; then
-    log "ERROR: Required environment variable '$var_name' is not set."
-    exit 1
-  fi
-}
+sudo apt update -y && sudo apt upgrade -y
+sudo apt install -y curl git
 
-# --- REQUIREMENTS / NONINTERACTIVE APT ---
-export DEBIAN_FRONTEND=noninteractive
+#--- main ---
+GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/refs/heads/main/clone_repo.sh"
 
-log "Updating package lists and installing prerequisites (curl, git)..."
-apt-get update -y
-apt-get install -y curl git
-
-# --- MAIN ---
-require_env "GITHUB_TOKEN"
-
-# BUILD_OPTION is optional; if not set, clone_repo.sh may prompt (unless you removed prompting there)
-export BUILD_OPTION="${BUILD_OPTION:-}"
+# Accept GITHUB_TOKEN from environment (AWX) or prompt interactively
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+    read -rp "Enter github classic token: " GITHUB_TOKEN
+    if [[ -z "$GITHUB_TOKEN" ]]; then
+        log "No github token entered."
+        exit 1
+    fi
+fi
 
 github_token_validate_pull_user
 
-log "Downloading clone_repo.sh to /opt/clone_repo.sh ..."
-curl -sS -f -o /opt/clone_repo.sh \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  "$GITHUB_REPO_URL" || { log "ERROR: Failed downloading clone_repo.sh"; exit 1; }
+# --- helper ---
+if [ "$(id -u)" -ne 0 ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
 
-chmod +x /opt/clone_repo.sh
+$SUDO curl -sS -f -o clone_repo.sh \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    "$GITHUB_REPO_URL" || { log "Error curl-ing clone_repo.sh."; exit 1; }
+$SUDO chown "$(id -u):$(id -g)" clone_repo.sh
+$SUDO chmod +x clone_repo.sh
+mv clone_repo.sh /opt/clone_repo.sh
 
-log "Executing /opt/clone_repo.sh (forwarding GITHUB_USER, GITHUB_TOKEN, BUILD_OPTION)..."
-env \
-  GITHUB_USER="${GITHUB_USER}" \
-  GITHUB_TOKEN="${GITHUB_TOKEN}" \
-  BUILD_OPTION="${BUILD_OPTION}" \
-  bash /opt/clone_repo.sh
+# Forward all relevant variables to clone_repo.sh
+$SUDO env \
+    GITHUB_USER="${GITHUB_USER}" \
+    GITHUB_TOKEN="${GITHUB_TOKEN}" \
+    BUILD_OPTION="${BUILD_OPTION:-}" \
+    bash /opt/clone_repo.sh
 
-log "get_it.sh completed successfully."
+log "Removing get_it.sh script for security."
+sudo rm -f get_it.sh
