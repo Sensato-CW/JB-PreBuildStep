@@ -16,7 +16,7 @@
         msg: "HoneypotBuildScripts directory not found. Run prebuild first."
       when: not sentinel_dir.stat.exists
 
-    # Get GitHub username from token (runs on AWX controller)
+    # IMPORTANT: this runs in the AWX runner container; do NOT use become/sudo here
     - name: Derive GitHub username from token
       uri:
         url: https://api.github.com/user
@@ -26,6 +26,7 @@
         return_content: true
       register: github_response
       delegate_to: localhost
+      become: false
 
     - name: Set GitHub username fact
       set_fact:
