@@ -33,7 +33,7 @@
         github_user: "{{ github_response.json.login }}"
 
     - name: Execute Honeypot build script
-      shell: /bin/bash /opt/HoneypotBuildScripts/hp-build.sh
+      shell: /bin/bash /opt/HoneypotBuildScripts/git-pull-rip-n-rebuild-ng.sh
       environment:
         GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
         GITHUB_USER: "{{ github_user }}"
