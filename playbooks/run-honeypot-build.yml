@@ -1,8 +1,8 @@
 ---
 - name: Honeypot – Run Local Build Script
   hosts: all
-  become: true
   gather_facts: false
+  become: true
 
   tasks:
 
@@ -16,7 +16,6 @@
         msg: "HoneypotBuildScripts directory not found. Run prebuild first."
       when: not sentinel_dir.stat.exists
 
-    # IMPORTANT: this runs in the AWX runner container; do NOT use become/sudo here
     - name: Derive GitHub username from token
       uri:
         url: https://api.github.com/user
@@ -32,8 +31,10 @@
       set_fact:
         github_user: "{{ github_response.json.login }}"
 
-    - name: Execute Honeypot build script
+    - name: Run Honeypot build as cl0udwave
       shell: /bin/bash /opt/HoneypotBuildScripts/hp-build.sh
+      become: true
+      become_user: cl0udwave
       environment:
         GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
         GITHUB_USER: "{{ github_user }}"
