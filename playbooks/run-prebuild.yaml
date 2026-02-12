@@ -12,7 +12,7 @@
     #   3 = VScanBuildScripts
     #   4 = OrchestratorBuildScripts
     # Pass via AWX survey or extra vars: -e build_option=2
-    build_option: "{{ build_option | default('2') }}"
+    build_option: "2"
     # GITHUB_TOKEN: pass via AWX credential env var or extra vars
     github_token: "{{ github_token | default(lookup('env', 'GITHUB_TOKEN')) }}"
 
