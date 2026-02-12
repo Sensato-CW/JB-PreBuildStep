@@ -55,6 +55,7 @@
         GITHUB_TOKEN: "{{ gh_token }}"
         BUILD_OPTION: "{{ prebuild_option }}"
         DEBIAN_FRONTEND: noninteractive
+        NEEDRESTART_MODE: a
       register: prebuild_result
       when: not prebuild_done.stat.exists
 
