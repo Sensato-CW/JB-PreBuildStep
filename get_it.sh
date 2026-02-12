@@ -41,8 +41,9 @@ github_token_validate_pull_user() {
     log "Token is valid for user: $GITHUB_USER"
 }
 
-sudo apt update -y && sudo apt upgrade -y
-sudo apt install -y curl git
+export DEBIAN_FRONTEND=noninteractive
+sudo -E apt update -y && sudo -E apt upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+sudo -E apt install -y curl git
 
 #--- main ---
 GITHUB_REPO_URL="https://raw.githubusercontent.com/gocloudwave/BuildStep/refs/heads/main/clone_repo.sh"
