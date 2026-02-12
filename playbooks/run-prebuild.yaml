@@ -34,7 +34,7 @@
       shell: /bin/bash -x /root/get_it.sh
       environment:
         GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
-        BUILD_OPTION: "1"
+        BUILD_OPTION: "2"
       register: prebuild_result
       when: not prebuild_done.stat.exists
 
