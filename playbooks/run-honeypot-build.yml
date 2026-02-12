@@ -16,10 +16,26 @@
         msg: "HoneypotBuildScripts directory not found. Run prebuild first."
       when: not sentinel_dir.stat.exists
 
+    # Get GitHub username from token (runs on AWX controller)
+    - name: Derive GitHub username from token
+      uri:
+        url: https://api.github.com/user
+        method: GET
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'GITHUB_TOKEN') }}"
+        return_content: true
+      register: github_response
+      delegate_to: localhost
+
+    - name: Set GitHub username fact
+      set_fact:
+        github_user: "{{ github_response.json.login }}"
+
     - name: Execute Honeypot build script
       shell: /bin/bash /opt/HoneypotBuildScripts/hp-build.sh
       environment:
         GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+        GITHUB_USER: "{{ github_user }}"
       register: build_result
 
     - name: Show build output
