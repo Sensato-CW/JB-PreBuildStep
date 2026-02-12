@@ -41,6 +41,7 @@ github_token_validate_pull_user() {
 }
 
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
 sudo -E apt update -y && sudo -E apt upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 sudo -E apt install -y curl git
 
