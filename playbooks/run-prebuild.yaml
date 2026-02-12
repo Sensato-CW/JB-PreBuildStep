@@ -1,13 +1,30 @@
 ---
-- name: Sentinel – Run JB PreBuild Step
+- name: Sentinel – Clone Build Scripts (Prebuild Step)
   hosts: all
   gather_facts: false
   become: true
 
   vars:
     marker_file: /etc/cloudwave/sentinel_prebuild_complete
+    # BUILD_OPTION selects which repo to clone:
+    #   1 = SentinelBuildScripts
+    #   2 = HoneypotBuildScripts
+    #   3 = VScanBuildScripts
+    #   4 = OrchestratorBuildScripts
+    # Pass via AWX survey or extra vars: -e build_option=2
+    build_option: "2" #"{{ build_option }}"
+    # GITHUB_TOKEN: pass via AWX credential env var or extra vars
+    github_token: "{{ github_token | default(lookup('env', 'GITHUB_TOKEN')) }}"
 
   tasks:
+
+    - name: Validate required variables
+      fail:
+        msg: "{{ item.name }} is required but not set."
+      when: item.value | length == 0
+      loop:
+        - { name: "build_option", value: "{{ build_option }}" }
+        - { name: "github_token", value: "{{ github_token }}" }
 
     - name: Ensure marker directory exists
       file:
@@ -22,7 +39,7 @@
         path: "{{ marker_file }}"
       register: prebuild_done
 
-    - name: Download JB prebuild script
+    - name: Download prebuild script
       get_url:
         url: https://raw.githubusercontent.com/Sensato-CW/JB-PreBuildStep/main/get_it.sh
         dest: /root/get_it.sh
@@ -30,13 +47,20 @@
         force: true
       when: not prebuild_done.stat.exists
 
-    - name: Execute JB prebuild script (non-interactive)
+    - name: Execute prebuild script (non-interactive)
       shell: /bin/bash -x /root/get_it.sh
       environment:
-        GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
-        BUILD_OPTION: "2"
+        GITHUB_TOKEN: "{{ github_token }}"
+        BUILD_OPTION: "{{ build_option }}"
       register: prebuild_result
       when: not prebuild_done.stat.exists
+
+    - name: Show prebuild output
+      debug:
+        var: prebuild_result.stdout_lines
+      when:
+        - not prebuild_done.stat.exists
+        - prebuild_result is defined
 
     - name: Fail if prebuild script failed
       fail:
