@@ -1,5 +1,5 @@
 ---
-- name: Sentinel – Run Local Build Script
+- name: Honeypot – Run Local Build Script
   hosts: all
   become: true
   gather_facts: false
@@ -18,6 +18,8 @@
 
     - name: Execute Honeypot build script
       shell: /bin/bash /opt/HoneypotBuildScripts/hp-build.sh
+      environment:
+        GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
       register: build_result
 
     - name: Show build output
@@ -26,5 +28,5 @@
 
     - name: Fail if build failed
       fail:
-        msg: "Sentinel build failed."
+        msg: "Honeypot build failed."
       when: build_result.rc != 0
