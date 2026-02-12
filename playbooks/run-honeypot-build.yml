@@ -4,17 +4,37 @@
   gather_facts: false
   become: true
 
+  vars:
+    # GITHUB_TOKEN: pass via AWX credential env var or extra vars
+    github_token: "{{ github_token | default(lookup('env', 'GITHUB_TOKEN')) }}"
+    hp_build_script: /opt/HoneypotBuildScripts/hp-build.sh
+
   tasks:
+
+    - name: Validate github_token is set
+      fail:
+        msg: "github_token is required but not set."
+      when: github_token | length == 0
 
     - name: Ensure HoneypotBuildScripts exists
       stat:
         path: /opt/HoneypotBuildScripts
-      register: sentinel_dir
+      register: hp_dir
 
     - name: Fail if HoneypotBuildScripts missing
       fail:
-        msg: "HoneypotBuildScripts directory not found. Run prebuild first."
-      when: not sentinel_dir.stat.exists
+        msg: "HoneypotBuildScripts directory not found. Run prebuild first (build_option=2)."
+      when: not hp_dir.stat.exists
+
+    - name: Ensure hp-build.sh exists
+      stat:
+        path: "{{ hp_build_script }}"
+      register: hp_script
+
+    - name: Fail if hp-build.sh missing
+      fail:
+        msg: "{{ hp_build_script }} not found in cloned repo."
+      when: not hp_script.stat.exists
 
     # Derive GitHub username using token (runs on AWX runner, not remote)
     - name: Derive GitHub username from token
@@ -22,7 +42,7 @@
         url: https://api.github.com/user
         method: GET
         headers:
-          Authorization: "Bearer {{ lookup('env', 'GITHUB_TOKEN') }}"
+          Authorization: "Bearer {{ github_token }}"
         return_content: true
       register: github_response
       delegate_to: localhost
@@ -33,9 +53,9 @@
         github_user: "{{ github_response.json.login }}"
 
     - name: Execute Honeypot build script
-      shell: /bin/bash /opt/HoneypotBuildScripts/hp-build.sh
+      shell: "/bin/bash {{ hp_build_script }}"
       environment:
-        GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+        GITHUB_TOKEN: "{{ github_token }}"
         GITHUB_USER: "{{ github_user }}"
       register: build_result
 
