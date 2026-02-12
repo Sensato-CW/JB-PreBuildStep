@@ -1,0 +1,30 @@
+---
+- name: Sentinel – Run Local Build Script
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+
+    - name: Ensure HoneypotBuildScripts exists
+      stat:
+        path: /opt/HoneypotBuildScripts
+      register: sentinel_dir
+
+    - name: Fail if HoneypotBuildScripts missing
+      fail:
+        msg: "HoneypotBuildScripts directory not found. Run prebuild first."
+      when: not sentinel_dir.stat.exists
+
+    - name: Execute Honeypot build script
+      shell: /bin/bash /opt/hp-build.sh
+      register: build_result
+
+    - name: Show build output
+      debug:
+        var: build_result.stdout_lines
+
+    - name: Fail if build failed
+      fail:
+        msg: "Sentinel build failed."
+      when: build_result.rc != 0
